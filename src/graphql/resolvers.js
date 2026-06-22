@@ -2,19 +2,18 @@ import bcrypt from "bcryptjs";
 import { signAccessToken } from "../config/jwt.js";
 import { DateScalar } from "../utils/scalars/Date.js";
 import { AppError } from "../utils/errors.js";
+import { requireAuth, requireRole } from "../config/auth.js";
 
 export const resolvers = {
   Date: DateScalar,
   Query: {
     health: () => ({ success: true, message: "ok" }),
     me: async (_parent, _args, context) => {
-      if (!context.user?.id) {
-        throw new AppError("Unauthorized", 401, "UNAUTHORIZED");
-      }
-
-      return context.userService.profile(context.user.id);
+      const user = requireAuth(context);
+      return context.userService.profile(user.id);
     },
     users: async (_parent, _args, context) => {
+      requireRole(context, ["ADMIN"]);
       const users = await context.userRepository.list();
       return { success: true, message: "Users loaded", data: users };
     },
@@ -48,9 +47,9 @@ export const resolvers = {
       };
     },
     createPost: async (_parent, { input }, context) =>
-      context.postService.createPost({ ...input, authorId: context.user?.id }),
+      context.postService.createPost({ ...input, authorId: requireAuth(context).id }),
     createComment: async (_parent, { input }, context) =>
-      context.commentService.createComment({ ...input, authorId: context.user?.id }),
+      context.commentService.createComment({ ...input, authorId: requireAuth(context).id }),
   },
   Subscription: {
     postCreated: {
