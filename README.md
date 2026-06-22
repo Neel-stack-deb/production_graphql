@@ -1,160 +1,481 @@
-# 🚀 Production GraphQL Backend
+# Production GraphQL Backend
 
-A production-ready GraphQL API built with **Apollo Server 4**, **Express 5**, **Prisma ORM**, and **Redis** — featuring JWT authentication, real-time subscriptions, and N+1 query prevention out of the box.
+A production-grade GraphQL backend demonstrating how modern GraphQL APIs are built beyond simple CRUD operations.
 
----
-
-## ✨ Features
-
-- **GraphQL API** via Apollo Server 4 with `@graphql-tools/schema`
-- **JWT Authentication** — secure token-based auth with `jsonwebtoken` + `bcryptjs`
-- **Real-time Subscriptions** — powered by `graphql-ws` and `graphql-redis-subscriptions` over Redis pub/sub
-- **Prisma ORM** — type-safe database access with SQLite (easily swappable to PostgreSQL/MySQL)
-- **DataLoader** — automatic request batching to eliminate N+1 query problems
-- **Production Security** — Helmet headers, CORS, and request logging via Morgan
-- **ES Modules** — full `import/export` syntax throughout
+This project implements authentication, authorization, real-time subscriptions, DataLoader batching, service/repository architecture, Redis-backed Pub/Sub, and production-ready middleware patterns commonly used in scalable backend systems.
 
 ---
 
-## 🛠️ Tech Stack
+## Why I Built This
+
+Most GraphQL tutorials stop at creating queries and mutations.
+
+This project explores the engineering patterns required to run GraphQL in production:
+
+- Authentication & Authorization
+- Subscription Infrastructure
+- Request Scoped Context
+- DataLoader & N+1 Prevention
+- Service Layer Architecture
+- Repository Pattern
+- Redis-backed Event Distribution
+- Graceful Shutdown
+- Error Standardization
+- Rate Limiting
+
+The goal was to understand how large-scale GraphQL systems are structured internally.
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
-|---|---|
-| Runtime | Node.js (ES Modules) |
-| Framework | Express 5 |
-| GraphQL Server | Apollo Server 4 |
-| Schema | `@graphql-tools/schema` |
-| ORM | Prisma 7 + better-sqlite3 adapter |
-| Subscriptions | `graphql-ws` + `graphql-redis-subscriptions` |
-| Cache / Pub-Sub | Redis (`ioredis`) |
-| Auth | JWT + bcryptjs |
-| N+1 Prevention | DataLoader |
-| Security | Helmet, CORS |
+|---------|------------|
+| Runtime | Node.js |
+| API Layer | Apollo Server 4 |
+| HTTP Server | Express 5 |
+| Database | SQLite |
+| ORM | Prisma |
+| Authentication | JWT |
+| Password Hashing | bcryptjs |
+| Real-Time Communication | graphql-ws |
+| Event System | Redis Pub/Sub |
+| Caching & Batching | DataLoader |
+| Security | Helmet |
+| Rate Limiting | express-rate-limit |
 | Logging | Morgan |
-| Dev Server | Nodemon |
 
 ---
 
-## 📁 Project Structure
+## Features
 
-```
-production_graphql/
-├── prisma/
-│   ├── schema.prisma       # Database schema
-│   └── migrations/         # Migration history
-├── src/                    # Application source
-├── index.js                # Server entry point
-├── prisma.config.ts        # Prisma configuration
-├── .env.example            # Environment variable template
-└── package.json
+### Authentication
+
+- User Registration
+- Login
+- JWT Access Tokens
+- Password Hashing
+- Request Authentication Middleware
+
+### Authorization
+
+- Role-Based Access Control
+- Protected Queries
+- Protected Mutations
+- Admin-only Operations
+
+### Real-Time Subscriptions
+
+- Post Creation Events
+- Comment Creation Events
+- Redis-backed Subscription Infrastructure
+- WebSocket Authentication
+- Automatic Token Expiration Handling
+
+### GraphQL Performance
+
+- DataLoader Integration
+- N+1 Query Prevention
+- Request Scoped Loaders
+
+### Architecture
+
+- Repository Pattern
+- Service Layer Pattern
+- Dependency Injection through GraphQL Context
+- Centralized Error Handling
+
+### Production Concerns
+
+- Request IDs
+- Rate Limiting
+- Helmet Security Headers
+- Graceful Shutdown
+- Health Checks
+- Readiness Checks
+
+---
+
+## Architecture Overview
+
+```text
+                        ┌─────────────┐
+                        │   Client    │
+                        └──────┬──────┘
+                               │
+          HTTP Queries         │       WebSocket Subscriptions
+        & Mutations            │
+                               ▼
+
+                     ┌──────────────────┐
+                     │ Apollo Server 4  │
+                     └────────┬─────────┘
+                              │
+                              ▼
+
+                   ┌────────────────────┐
+                   │ GraphQL Resolvers  │
+                   └────────┬───────────┘
+                            │
+                            ▼
+
+                   ┌────────────────────┐
+                   │ Service Layer      │
+                   └────────┬───────────┘
+                            │
+                            ▼
+
+                   ┌────────────────────┐
+                   │ Repository Layer   │
+                   └────────┬───────────┘
+                            │
+                            ▼
+
+                   ┌────────────────────┐
+                   │ Prisma ORM         │
+                   └────────┬───────────┘
+                            │
+                            ▼
+
+                   ┌────────────────────┐
+                   │ SQLite Database    │
+                   └────────────────────┘
 ```
 
 ---
 
-## ⚙️ Getting Started
+## Project Structure
 
-### Prerequisites
+```text
+src
+│
+├── config/
+│   ├── auth.js
+│   ├── jwt.js
+│   ├── prisma.js
+│   ├── redis.js
+│   └── pubsub.js
+│
+├── graphql/
+│   ├── schema.js
+│   ├── typeDefs.js
+│   └── resolvers.js
+│
+├── repositories/
+│   ├── user.repository.js
+│   ├── post.repository.js
+│   └── comment.repository.js
+│
+├── services/
+│   ├── user.service.js
+│   ├── post.service.js
+│   └── comment.service.js
+│
+├── loaders/
+│   └── DataLoader implementations
+│
+├── middleware/
+│   ├── requestContext.js
+│   └── graphqlRateLimit.js
+│
+├── data/
+│   ├── context.js
+│   └── datasources.js
+│
+└── utils/
+    ├── validation.js
+    ├── errors.js
+    └── scalars/
+```
 
-- Node.js 18+
-- Redis instance (local or remote)
+---
 
-### Installation
+## Database Schema
+
+### User
+
+```text
+User
+ ├── id
+ ├── name
+ ├── email
+ ├── passwordHash
+ ├── role
+ ├── tokenVersion
+ ├── createdAt
+ └── updatedAt
+```
+
+### Post
+
+```text
+Post
+ ├── id
+ ├── title
+ ├── body
+ ├── authorId
+ ├── createdAt
+ └── updatedAt
+```
+
+### Comment
+
+```text
+Comment
+ ├── id
+ ├── body
+ ├── authorId
+ ├── postId
+ ├── createdAt
+ └── updatedAt
+```
+
+---
+
+## Authentication Flow
+
+```text
+Login
+   │
+   ▼
+
+Validate Credentials
+   │
+   ▼
+
+Generate JWT
+   │
+   ▼
+
+Client Stores Token
+   │
+   ▼
+
+Authorization Header
+   │
+   ▼
+
+Auth Middleware
+   │
+   ▼
+
+GraphQL Context
+   │
+   ▼
+
+Protected Resolver
+```
+
+---
+
+## Logout Strategy
+
+This project implements token invalidation using a `tokenVersion`.
+
+When a user logs out:
+
+1. `tokenVersion` is incremented in the database.
+2. Existing JWTs become invalid.
+3. Future requests using old tokens are rejected.
+
+This avoids maintaining a token blacklist.
+
+---
+
+## DataLoader & N+1 Prevention
+
+Without DataLoader:
+
+```graphql
+{
+  posts {
+    author {
+      name
+    }
+  }
+}
+```
+
+Could trigger:
+
+```text
+1 Query -> Posts
+N Queries -> Authors
+```
+
+With DataLoader:
+
+```text
+1 Query -> Posts
+1 Query -> Authors
+```
+
+The loaders batch and cache requests during a single GraphQL operation.
+
+---
+
+## Real-Time Subscription Flow
+
+```text
+Create Post
+    │
+    ▼
+
+Post Service
+    │
+    ▼
+
+Redis PubSub Publish
+    │
+    ▼
+
+Subscription Channel
+    │
+    ▼
+
+WebSocket Server
+    │
+    ▼
+
+Connected Clients
+```
+
+Events:
+
+- POST_CREATED
+- COMMENT_CREATED
+
+---
+
+## Example Operations
+
+### Register
+
+```graphql
+mutation {
+  register(
+    input: {
+      name: "Neel"
+      email: "neel@example.com"
+      password: "password123"
+    }
+  ) {
+    success
+    message
+  }
+}
+```
+
+### Login
+
+```graphql
+mutation {
+  login(
+    input: {
+      email: "neel@example.com"
+      password: "password123"
+    }
+  ) {
+    token
+  }
+}
+```
+
+### Create Post
+
+```graphql
+mutation {
+  createPost(
+    input: {
+      title: "GraphQL"
+      body: "Learning GraphQL internals"
+    }
+  ) {
+    success
+  }
+}
+```
+
+### Subscription
+
+```graphql
+subscription {
+  postCreated {
+    id
+    title
+  }
+}
+```
+
+---
+
+## Health Endpoints
+
+### Liveness
+
+```http
+GET /health
+```
+
+### Readiness
+
+```http
+GET /ready
+```
+
+Verifies database connectivity before accepting traffic.
+
+---
+
+## Running Locally
+
+### Install
 
 ```bash
-# Clone the repository
-git clone https://github.com/Neel-stack-deb/production_graphql.git
-cd production_graphql
-
-# Install dependencies
 npm install
-
-# Set up environment variables
-cp .env.example .env
 ```
 
-### Environment Variables
+### Configure Environment
 
 ```env
 PORT=3000
 DATABASE_URL="file:./dev.db"
-JWT_SECRET="your-strong-secret-here"
+JWT_SECRET="your-secret"
 JWT_EXPIRES_IN="1h"
 REDIS_URL="redis://localhost:6379"
 ```
 
-### Database Setup
+### Run Migrations
 
 ```bash
-# Run Prisma migrations
 npx prisma migrate dev
-
-# (Optional) Open Prisma Studio
-npx prisma studio
 ```
 
-### Running the Server
+### Start
 
 ```bash
-# Development (with hot reload)
 npm run dev
-
-# Production
-npm start
-```
-
-The GraphQL playground will be available at `http://localhost:3000/graphql`.
-
----
-
-## 🔐 Authentication
-
-The API uses JWT-based authentication. Include the token in your request headers:
-
-```http
-Authorization: Bearer <your_jwt_token>
-```
-
-Passwords are hashed with **bcryptjs** before storage — never stored in plain text.
-
----
-
-## 📡 Real-Time Subscriptions
-
-WebSocket subscriptions are handled via `graphql-ws` with Redis as the pub/sub backend, making subscriptions scalable across multiple server instances.
-
-Connect to subscriptions at:
-```
-ws://localhost:3000/graphql
 ```
 
 ---
 
-## 🚀 Production Considerations
+## Key Concepts Demonstrated
 
-- **Helmet** sets secure HTTP headers on every response
-- **CORS** is configured to control cross-origin access
-- **DataLoader** batches and caches database reads per request to eliminate N+1 queries
-- **Morgan** logs every HTTP request for observability
-- Redis pub/sub ensures subscriptions work in a horizontally scaled deployment
-- Swap `DATABASE_URL` to a PostgreSQL or MySQL connection string and update the Prisma provider for a production database
-
----
-
-## 📜 Scripts
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start with Nodemon (auto-restart on changes) |
-| `npm start` | Start the production server |
-
----
-
-## 🤝 Contributing
-
-Pull requests are welcome. For major changes, please open an issue first to discuss what you'd like to change.
+- GraphQL Server Architecture
+- Resolver Design
+- Service Layer Pattern
+- Repository Pattern
+- Context Injection
+- Authentication
+- Authorization
+- DataLoader
+- GraphQL Subscriptions
+- Redis Pub/Sub
+- Prisma ORM
+- Production Middleware
+- WebSocket Authentication
+- Graceful Shutdown
 
 ---
 
-## 📄 License
-
-ISC
+Built to understand how production GraphQL systems are structured internally rather than just how to write queries and mutations.
