@@ -11,6 +11,7 @@ export function baseContext(token = null) {
     db: prisma,
     user,
     token,
+    requestId: null,
     ...dataSources,
     loaders: createLoaders(dataSources),
   };
@@ -18,7 +19,10 @@ export function baseContext(token = null) {
 
 export async function createApolloContext({ req }) {
   const token = req.token || null;
-  return baseContext(token);
+  return {
+    ...baseContext(token),
+    requestId: req.requestId || null,
+  };
 }
 
 export async function createSubscriptionContext(ctx) {
@@ -29,6 +33,7 @@ export async function createSubscriptionContext(ctx) {
   return {
     ...base,
     user: payload,
+    requestId: ctx.extra?.requestId || null,
     tokenExpiresAt: payload?.exp ? new Date(payload.exp * 1000) : null,
     expiryTimer: null,
   };

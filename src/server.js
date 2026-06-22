@@ -2,7 +2,6 @@ import express from "express";
 import http from "http";
 import cors from "cors";
 import helmet from "helmet";
-import morgan from "morgan";
 import { expressMiddleware } from "@apollo/server/express4";
 import { WebSocketServer } from "ws";
 import { useServer } from "graphql-ws/lib/use/ws";
@@ -15,6 +14,7 @@ import { formatGraphQLError } from "./utils/errors.js";
 import { closePrisma, prisma } from "./config/prisma.js";
 import { closeRedis } from "./config/redis.js";
 import { closePubSub } from "./config/pubsub.js";
+import { requestContext } from "./middleware/requestContext.js";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -68,10 +68,18 @@ export async function startServer() {
 
   app.use(helmet());
   app.use(cors({ origin: true, credentials: true }));
-  app.use(morgan("dev"));
+  app.use(requestContext);
   app.use(express.json());
 
-  app.get("/health", async (_req, res) => {
+  app.get("/health", (_req, res) => {
+    res.json({
+      success: true,
+      message: "ok",
+      data: { service: "up" },
+    });
+  });
+
+  app.get("/ready", async (_req, res) => {
     const status = await prisma.$queryRaw`SELECT 1`;
     res.json({
       success: true,
