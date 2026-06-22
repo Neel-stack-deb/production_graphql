@@ -19,6 +19,13 @@ export class UserRepository {
     return prisma.user.create({ data });
   }
 
+  async updateById(id, data) {
+    return prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
+
   async list() {
     return prisma.user.findMany({ orderBy: { createdAt: "desc" } });
   }

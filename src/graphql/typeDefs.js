@@ -103,6 +103,7 @@ export const typeDefs = `#graphql
   type Mutation {
     register(input: RegisterInput!): UserResponse!
     login(input: LoginInput!): AuthPayload!
+    logout: ApiResponse!
     createPost(input: CreatePostInput!): PostResponse!
     createComment(input: CreateCommentInput!): CommentResponse!
   }

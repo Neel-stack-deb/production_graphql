@@ -48,6 +48,27 @@ test("UserService.register validates and persists a new user", async () => {
   assert.equal(result.data.name, "Ada Lovelace");
 });
 
+test("UserService.logout increments token version", async () => {
+  let updatedData = null;
+  const userRepository = {
+    findByEmail: async () => null,
+    create: async () => null,
+    updateById: async (id, data) => {
+      updatedData = { id, data };
+      return { id, tokenVersion: 1 };
+    },
+  };
+
+  const userService = new UserService(userRepository);
+  const result = await userService.logout("user-1");
+
+  assert.equal(result.success, true);
+  assert.deepEqual(updatedData, {
+    id: "user-1",
+    data: { tokenVersion: { increment: 1 } },
+  });
+});
+
 test("PostService.createPost publishes a post event", async () => {
   let published = null;
   const postRepository = {

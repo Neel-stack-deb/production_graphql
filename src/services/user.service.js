@@ -44,4 +44,18 @@ export class UserService {
       data: user,
     };
   }
+
+  async logout(userId) {
+    const user = await this.userRepository.updateById(userId, {
+      tokenVersion: {
+        increment: 1,
+      },
+    });
+
+    return {
+      success: true,
+      message: "Logged out successfully",
+      data: user,
+    };
+  }
 }

@@ -45,10 +45,11 @@ export const resolvers = {
       }
 
       return {
-        token: signAccessToken({ id: user.id, email: user.email, role: user.role }),
+        token: signAccessToken({ id: user.id, email: user.email, role: user.role, tokenVersion: user.tokenVersion }),
         user,
       };
     },
+    logout: async (_parent, _args, context) => context.userService.logout(requireAuth(context).id),
     createPost: async (_parent, { input }, context) =>
       context.postService.createPost({ ...input, authorId: requireAuth(context).id }),
     createComment: async (_parent, { input }, context) =>
