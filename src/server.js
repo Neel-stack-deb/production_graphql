@@ -15,6 +15,7 @@ import { closePrisma, prisma } from "./config/prisma.js";
 import { closeRedis } from "./config/redis.js";
 import { closePubSub } from "./config/pubsub.js";
 import { requestContext } from "./middleware/requestContext.js";
+import { graphqlRateLimit } from "./middleware/graphqlRateLimit.js";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -90,6 +91,7 @@ export async function startServer() {
 
   app.use(
     "/graphql",
+    graphqlRateLimit,
     authMiddleware,
     expressMiddleware(apollo, {
       context: createApolloContext,
