@@ -14,6 +14,7 @@ import { schema } from "./graphql/schema.js";
 import { formatGraphQLError } from "./utils/errors.js";
 import { closePrisma, prisma } from "./config/prisma.js";
 import { closeRedis } from "./config/redis.js";
+import { closePubSub } from "./config/pubsub.js";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -99,6 +100,7 @@ export async function startServer() {
 async function shutdown(signal) {
   console.log(`Received ${signal}, shutting down gracefully...`);
   await apollo.stop();
+  await closePubSub();
   await closeRedis();
   await closePrisma();
   await new Promise((resolve) => httpServer.close(resolve));

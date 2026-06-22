@@ -5,12 +5,12 @@ import { UserService } from "../services/user.service.js";
 import { PostService } from "../services/post.service.js";
 import { CommentService } from "../services/comment.service.js";
 import { getRedisClient } from "../config/redis.js";
-import { createPubSub } from "./pubsub.js";
+import { getPubSub } from "../config/pubsub.js";
 
 const userRepository = new UserRepository();
 const postRepository = new PostRepository();
 const commentRepository = new CommentRepository();
-const pubSub = createPubSub();
+const pubSub = getPubSub();
 const redis = getRedisClient();
 
 const userService = new UserService(userRepository);
