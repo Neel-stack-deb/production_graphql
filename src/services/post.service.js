@@ -1,4 +1,5 @@
 import { AppError } from "../utils/errors.js";
+import { assertStringField } from "../utils/validation.js";
 
 export class PostService {
   constructor(postRepository, pubSub) {
@@ -7,13 +8,16 @@ export class PostService {
   }
 
   async createPost({ title, body, authorId }) {
+    const safeTitle = assertStringField(title, "Title", { minLength: 3 });
+    const safeBody = assertStringField(body, "Body", { minLength: 10 });
+
     if (!authorId) {
       throw new AppError("Authentication required", 401, "UNAUTHORIZED");
     }
 
     const post = await this.postRepository.create({
-      title,
-      body,
+      title: safeTitle,
+      body: safeBody,
       authorId,
     });
 

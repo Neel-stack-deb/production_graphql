@@ -3,6 +3,7 @@ import { signAccessToken } from "../config/jwt.js";
 import { DateScalar } from "../utils/scalars/Date.js";
 import { AppError } from "../utils/errors.js";
 import { requireAuth, requireRole } from "../config/auth.js";
+import { assertEmail, assertStringField } from "../utils/validation.js";
 
 export const resolvers = {
   Date: DateScalar,
@@ -31,12 +32,14 @@ export const resolvers = {
   Mutation: {
     register: async (_parent, { input }, context) => context.userService.register(input),
     login: async (_parent, { input }, context) => {
-      const user = await context.userRepository.findByEmail(input.email);
+      const email = assertEmail(input.email);
+      const password = assertStringField(input.password, "Password", { minLength: 8 });
+      const user = await context.userRepository.findByEmail(email);
       if (!user) {
         throw new AppError("Invalid credentials", 401, "UNAUTHORIZED");
       }
 
-      const isValid = await bcrypt.compare(input.password, user.passwordHash);
+      const isValid = await bcrypt.compare(password, user.passwordHash);
       if (!isValid) {
         throw new AppError("Invalid credentials", 401, "UNAUTHORIZED");
       }

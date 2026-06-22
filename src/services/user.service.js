@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { AppError } from "../utils/errors.js";
+import { assertEmail, assertStringField } from "../utils/validation.js";
 
 export class UserService {
   constructor(userRepository) {
@@ -7,15 +8,19 @@ export class UserService {
   }
 
   async register({ name, email, password }) {
-    const existing = await this.userRepository.findByEmail(email);
+    const safeName = assertStringField(name, "Name", { minLength: 2 });
+    const safeEmail = assertEmail(email);
+    const safePassword = assertStringField(password, "Password", { minLength: 8 });
+
+    const existing = await this.userRepository.findByEmail(safeEmail);
     if (existing) {
       throw new AppError("Email already in use", 409, "CONFLICT");
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(safePassword, 12);
     const user = await this.userRepository.create({
-      name,
-      email,
+      name: safeName,
+      email: safeEmail,
       passwordHash,
       role: "USER",
     });

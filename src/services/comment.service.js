@@ -1,4 +1,5 @@
 import { AppError } from "../utils/errors.js";
+import { assertStringField } from "../utils/validation.js";
 
 export class CommentService {
   constructor(commentRepository, pubSub) {
@@ -7,13 +8,15 @@ export class CommentService {
   }
 
   async createComment({ postId, body, authorId }) {
+    const safeBody = assertStringField(body, "Body", { minLength: 2 });
+
     if (!authorId) {
       throw new AppError("Authentication required", 401, "UNAUTHORIZED");
     }
 
     const comment = await this.commentRepository.create({
       postId,
-      body,
+      body: safeBody,
       authorId,
     });
 
