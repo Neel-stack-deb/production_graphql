@@ -8,7 +8,10 @@ import { useServer } from "graphql-ws/lib/use/ws";
 import { ApolloServer } from "@apollo/server";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { authMiddleware } from "./config/auth.js";
-import { createApolloContext, createSubscriptionContext } from "./data/context.js";
+import {
+  createApolloContext,
+  createSubscriptionContext,
+} from "./data/context.js";
 import { schema } from "./graphql/schema.js";
 import { formatGraphQLError } from "./utils/errors.js";
 import { closePrisma, prisma } from "./config/prisma.js";
@@ -28,9 +31,11 @@ const wsServer = new WebSocketServer({
 const wsCleanup = useServer(
   {
     schema,
-    context: async (ctx) => createSubscriptionContext(ctx),
     onConnect: async (ctx) => {
-      const token = ctx.connectionParams?.authorization?.replace("Bearer ", "") || ctx.connectionParams?.token || null;
+      const token =
+        ctx.connectionParams?.authorization?.replace("Bearer ", "") ||
+        ctx.connectionParams?.token ||
+        null;
       if (!token) {
         throw new Error("Unauthorized");
       }
@@ -41,13 +46,22 @@ const wsCleanup = useServer(
       }
 
       if (connectionContext.tokenExpiresAt) {
-        const timeoutMs = Math.max(connectionContext.tokenExpiresAt.getTime() - Date.now(), 0);
+        const timeoutMs = Math.max(
+          connectionContext.tokenExpiresAt.getTime() - Date.now(),
+          0,
+        );
         ctx.extra.expiryTimer = setTimeout(() => {
           ctx.extra.socket.close(4403, "Token expired");
         }, timeoutMs);
       }
 
-      return connectionContext;
+      ctx.extra.connectionContext = connectionContext;
+    },
+    context: async (ctx) => {
+      if (!ctx.extra.connectionContext) {
+        throw new Error("Connection context missing");
+      }
+      return ctx.extra.connectionContext;
     },
     onDisconnect: async (ctx) => {
       if (ctx.extra?.expiryTimer) {
@@ -60,7 +74,18 @@ const wsCleanup = useServer(
 
 const apollo = new ApolloServer({
   schema,
-  plugins: [ApolloServerPluginDrainHttpServer({ httpServer }), { async serverWillStart() { return { async drainServer() { wsCleanup.dispose(); } }; } }],
+  plugins: [
+    ApolloServerPluginDrainHttpServer({ httpServer }),
+    {
+      async serverWillStart() {
+        return {
+          async drainServer() {
+            wsCleanup.dispose();
+          },
+        };
+      },
+    },
+  ],
   formatError: formatGraphQLError,
 });
 
